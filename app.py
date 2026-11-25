@@ -114,7 +114,7 @@ with st.sidebar:
         [
             "Trap Case 1: GI Bleed + Outdated Warfarin + Penicillin Allergy",
             "Clean Case 2: Resolved Pneumonia (Safe Reconciled Record)",
-            "Upload Hospital PDFs (Multi-File)",
+            "Upload Clinical Files (PDF, PNG, JPG, TXT)",
             "Custom JSON Input (Paste Your Own Records)",
         ],
     )
@@ -126,17 +126,18 @@ with st.sidebar:
     elif "Clean Case 2" in case_choice:
         with open("data/patient_clean_2.json", "r") as f:
             records = json.load(f)
-    elif "Upload Hospital PDFs" in case_choice:
+    elif "Upload Clinical Files" in case_choice or "Upload Hospital PDFs" in case_choice:
         uploaded_pdfs = st.file_uploader(
-            "Upload clinical PDFs (Admission, Labs, Discharge):",
-            type=["pdf"],
+            "Upload clinical reports (PDF, PNG, JPG, JPEG, TXT):",
+            type=["pdf", "png", "jpg", "jpeg", "txt"],
             accept_multiple_files=True,
         )
         if uploaded_pdfs:
-            records = parse_uploaded_pdfs(uploaded_pdfs)
-            st.success(f"Loaded {len(records)} clinical section(s).")
+            with st.spinner("Extracting text & running Vision OCR on handwritten/scanned images..."):
+                records = parse_uploaded_pdfs(uploaded_pdfs)
+            st.success(f"Loaded {len(records)} clinical document(s) ready for audit.")
         else:
-            st.info("Upload one or more PDF files above to begin.")
+            st.info("Upload PDF, PNG, JPG, or TXT clinical records above to begin.")
     else:
         raw_input = st.text_area(
             "Paste JSON array of documents:",
@@ -309,7 +310,7 @@ else:
     # Pre-run preview of loaded documents
     st.markdown("### 📄 Loaded Clinical Records Ready for Audit")
     if not records:
-        st.info("Select a sample case or upload hospital PDFs in the left sidebar, then click **Run MEDUSA-X Forensic Audit**.")
+        st.info("Select a sample case, upload PDF/PNG/JPG/TXT clinical records in the left sidebar, and click **Run MEDUSA-X Forensic Audit**.")
     else:
         cols = st.columns(2)
         for idx, doc in enumerate(records):
