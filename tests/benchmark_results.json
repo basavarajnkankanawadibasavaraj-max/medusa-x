@@ -1,0 +1,46 @@
+[
+  {
+    "case_id": "BENCH_01_TRAP_GI_BLEED",
+    "expected_mode": "ESCALATED",
+    "actual_mode": "ESCALATED",
+    "passed": true,
+    "trust_score": 0.45,
+    "conflicts": 5,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 44.95708530000411
+  },
+  {
+    "case_id": "BENCH_02_CLEAN_PNEUMONIA",
+    "expected_mode": "VERIFIED_SUMMARY",
+    "actual_mode": "VERIFIED_SUMMARY",
+    "passed": true,
+    "trust_score": 1.0,
+    "conflicts": 0,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 98.54516100000183
+  },
+  {
+    "case_id": "BENCH_03_TRAP_RENAL_HYPERKALEMIA",
+    "expected_mode": "ESCALATED",
+    "actual_mode": "ESCALATED",
+    "passed": true,
+    "trust_score": 0.6,
+    "conflicts": 2,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 72.2068300999963
+  },
+  {
+    "case_id": "BENCH_04_CLEAN_APPENDECTOMY",
+    "expected_mode": "VERIFIED_SUMMARY",
+    "actual_mode": "VERIFIED_SUMMARY",
+    "passed": true,
+    "trust_score": 1.0,
+    "conflicts": 0,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 50.40807279999717
+  }
+]

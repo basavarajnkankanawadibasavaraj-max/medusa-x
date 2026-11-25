@@ -1,12 +1,13 @@
 import os
-import json
+import re
+import time
 from collections import defaultdict
 import instructor
-from openai import OpenAI
+from instructor.core import InstructorRetryException
+from openai import OpenAI, RateLimitError, BadRequestError
 from dotenv import load_dotenv
 
 from schemas import ClinicalEvent, AuditResult
-from parser import extract_from_document
 
 load_dotenv()
 
@@ -17,6 +18,15 @@ client = instructor.from_openai(
     ),
     mode=instructor.Mode.JSON,
 )
+
+FALLBACK_MODELS = [
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "meta-llama/llama-4-maverick-17b-128e-instruct",
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+]
+
+EXHAUSTED_MODELS: set[str] = set()
 
 def build_temporal_timeline(all_events: list[ClinicalEvent]) -> dict:
     """
@@ -53,16 +63,22 @@ You are the MEDUSA-X Epistemic Clinical Auditor & Safety Gatekeeper.
 Your job is to verify reconstructed patient timelines and catch dangerous discrepancies BEFORE any clinical summary is trusted.
 
 Analyze the chronological clinical events and the deterministic timeline flags to detect:
-1. Outdated_Medication: Drugs copy-pasted or resumed after being discontinued/held without clinical justification.
-2. Allergy_Mismatch: Prescribed drugs that cross-react with documented patient allergies (e.g., Penicillin allergy vs. Amoxicillin/Ampicillin).
+1. Outdated_Medication: Drugs copy-pasted or resumed after being discontinued/held without clinical justification, or medications contraindicated by new critical lab results (e.g., Metformin with severe renal failure / low eGFR, or ACE inhibitors/Lisinopril with severe hyperkalemia).
+2. Allergy_Mismatch: Prescribed drugs that cross-react with documented patient allergies (e.g., Penicillin allergy vs. Amoxicillin, or Sulfa allergy vs. Bactrim/Sulfamethoxazole).
 3. Contradictory_Diagnosis: Conflicting diagnoses across notes.
-4. Missing_Followup: Critical abnormal labs (e.g., low Hemoglobin, high INR) or suspected conditions lacking follow-up verification at discharge.
+4. Missing_Followup: Critical abnormal labs or acute organ injuries lacking follow-up verification at discharge.
 
 EPISTEMIC HUMILITY RULES:
 - Calculate a 'trust_score' between 0.0 and 1.0 (deduct heavily for every unresolved conflict or missing critical lab).
 - Set 'must_escalate' = True if there is ANY CRITICAL conflict, medication discrepancy, allergy risk, or if trust_score < 0.85.
 - Every conflict MUST cite exact quotes and Document IDs in 'evidence_a' and 'evidence_b'.
 """
+
+def _sleep_for_rate_limit(err: Exception, attempt: int):
+    msg = str(err)
+    match = re.search(r"try again in (\d+(?:\.\d+)?)s", msg)
+    wait_s = float(match.group(1)) + 1.0 if match else 3.0 * (attempt + 1)
+    time.sleep(min(wait_s, 15.0))
 
 def run_clinical_audit(all_events: list[ClinicalEvent]) -> AuditResult:
     timeline_data = build_temporal_timeline(all_events)
@@ -86,46 +102,36 @@ def run_clinical_audit(all_events: list[ClinicalEvent]) -> AuditResult:
     Perform a complete forensic audit, assign a trust_score, and decide whether the system MUST STOP and escalate to a human clinician.
     """
 
-    return client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        response_model=AuditResult,
-        messages=[
-            {"role": "system", "content": AUDITOR_SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.0,
-    )
+    for model_name in FALLBACK_MODELS:
+        if model_name in EXHAUSTED_MODELS:
+            continue
+        for attempt in range(3):
+            try:
+                return client.chat.completions.create(
+                    model=model_name,
+                    response_model=AuditResult,
+                    messages=[
+                        {"role": "system", "content": AUDITOR_SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.0,
+                    max_tokens=8192,
+                    max_retries=1,
+                )
+            except (RateLimitError, BadRequestError, InstructorRetryException) as e:
+                err_str = str(e).lower()
+                if "tokens per day" in err_str or "tpd" in err_str or "model_not_found" in err_str:
+                    EXHAUSTED_MODELS.add(model_name)
+                    break
+                if "json_validate_failed" in err_str or "400" in err_str:
+                    if attempt >= 1:
+                        break
+                    time.sleep(1.0)
+                    continue
+                if "429" not in err_str and "rate_limit" not in err_str:
+                    raise
+                if attempt == 2:
+                    break
+                _sleep_for_rate_limit(e, attempt)
 
-if __name__ == "__main__":
-    with open("data/patient_trap_1.json", "r") as f:
-        records = json.load(f)
-
-    print("🔍 Step 1: Extracting events across all patient documents...")
-    all_events = []
-    for doc in records:
-        extracted = extract_from_document(doc)
-        all_events.extend(extracted.events)
-
-    print(f"✅ Extracted {len(all_events)} clinical events. Running Layer 2 & 3 Forensic Audit...\n")
-    audit = run_clinical_audit(all_events)
-
-    print("=" * 65)
-    print(f"📊 RECORD TRUST SCORE: {audit.trust_score:.2f} / 1.00")
-    if audit.must_escalate:
-        print("🛑 GATEKEEPER DECISION: SYSTEM HALTED — HUMAN ESCALATION REQUIRED")
-        print(f"   Reason: {audit.escalation_reason}")
-    else:
-        print("✅ GATEKEEPER DECISION: SAFE TO SUMMARIZE")
-    print("=" * 65)
-
-    print("\n🚨 DETECTED CONFLICTS:")
-    for idx, c in enumerate(audit.conflicts, 1):
-        print(f"\n  {idx}. [{c.severity}] {c.conflict_type}")
-        print(f"     Issue:      {c.description}")
-        print(f"     Evidence A: {c.evidence_a}")
-        print(f"     Evidence B: {c.evidence_b}")
-
-    if audit.missing_information:
-        print("\n❓ MISSING CLINICAL INFORMATION:")
-        for item in audit.missing_information:
-            print(f"  - {item}")
+    raise RuntimeError("All Groq fallback models reached their rate limits or failed validation.")

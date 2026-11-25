@@ -1,13 +1,15 @@
 import os
+import time
 from typing import TypedDict, List, Optional
 import instructor
-from openai import OpenAI
+from instructor.core import InstructorRetryException
+from openai import OpenAI, RateLimitError, BadRequestError
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 
 from schemas import ClinicalEvent, AuditResult
-from parser import extract_from_document
+from parser import extract_from_document, FALLBACK_MODELS, EXHAUSTED_MODELS
 from auditor import run_clinical_audit
 from memory import PatientDigitalTwin
 
@@ -100,10 +102,8 @@ def node_active_retriever(state: MedusaState) -> MedusaState:
 
 def route_after_audit(state: MedusaState) -> str:
     audit = state["audit_result"]
-    # If missing info exists and we haven't done an active vector search yet, loop once to verify
     if audit.missing_information and state["retrieval_attempts"] < 1:
         return "active_retrieve"
-    # Safety Gatekeeper decision
     if audit.must_escalate or audit.trust_score < 0.85:
         return "escalate"
     return "summarize"
@@ -125,19 +125,48 @@ def node_summarize(state: MedusaState) -> MedusaState:
         f"- [{ev.event_date}] ({ev.doc_id}) [{ev.category}] {ev.entity_name} | Status: {ev.status} | Dose/Val: {ev.value_or_dose}"
         for ev in sorted(state["extracted_events"], key=lambda e: e.event_date)
     ])
-    
-    brief = groq_client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        response_model=VerifiedClinicalBrief,
-        messages=[
-            {
-                "role": "system",
-                "content": "Generate a concise, structured clinical handoff summary using ONLY the verified events provided. Cite [Doc_ID] on every item."
-            },
-            {"role": "user", "content": events_dump},
-        ],
-        temperature=0.0,
-    )
+
+    brief = None
+    for model_name in FALLBACK_MODELS:
+        if model_name in EXHAUSTED_MODELS:
+            continue
+        for attempt in range(3):
+            try:
+                brief = groq_client.chat.completions.create(
+                    model=model_name,
+                    response_model=VerifiedClinicalBrief,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "Generate a concise, structured clinical handoff summary using ONLY the verified events provided. Cite [Doc_ID] on every item."
+                        },
+                        {"role": "user", "content": events_dump},
+                    ],
+                    temperature=0.0,
+                    max_tokens=8192,
+                    max_retries=1,
+                )
+                break
+            except (RateLimitError, BadRequestError, InstructorRetryException) as e:
+                err_str = str(e).lower()
+                if "tokens per day" in err_str or "tpd" in err_str or "model_not_found" in err_str:
+                    EXHAUSTED_MODELS.add(model_name)
+                    break
+                if "json_validate_failed" in err_str or "400" in err_str:
+                    if attempt >= 1:
+                        break
+                    time.sleep(1.0)
+                    continue
+                if "429" not in err_str and "rate_limit" not in err_str:
+                    raise
+                if attempt == 2:
+                    break
+                time.sleep(3.0 * (attempt + 1))
+        if brief is not None:
+            break
+
+    if brief is None:
+        raise RuntimeError("All Groq fallback models reached their rate limits while generating the summary.")
     
     return {
         **state,
