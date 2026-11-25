@@ -1,0 +1,26 @@
+[
+  {
+    "doc_id": "DOC_01_ADMISSION",
+    "doc_type": "Admission_Note",
+    "doc_date": "2026-11-18",
+    "text": "52yo female admitted with community-acquired pneumonia. Past medical history: Type 2 Diabetes. Allergies: NKDA (No Known Drug Allergies). Home Meds: Metformin 500mg twice daily."
+  },
+  {
+    "doc_id": "DOC_02_LABS",
+    "doc_type": "Lab_Report",
+    "doc_date": "2026-11-18",
+    "text": "WBC: 14.2 x10^9/L (HIGH). Serum Creatinine: 0.9 mg/dL (NORMAL). Blood Glucose: 148 mg/dL."
+  },
+  {
+    "doc_id": "DOC_03_PROGRESS",
+    "doc_type": "Progress_Note",
+    "doc_date": "2026-11-20",
+    "text": "Patient afebrile for 24 hours on IV Ceftriaxone and Azithromycin. Repeat WBC trending down to 9.4 x10^9/L (NORMAL). Tolerating oral diet."
+  },
+  {
+    "doc_id": "DOC_04_DISCHARGE",
+    "doc_type": "Discharge_Summary",
+    "doc_date": "2026-11-21",
+    "text": "Pneumonia resolved. Transitioned IV antibiotics to oral Azithromycin 500mg once daily for 2 more days. Resume home Metformin 500mg twice daily. Follow up with primary care in 7 days."
+  }
+]
