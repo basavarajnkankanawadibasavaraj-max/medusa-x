@@ -1,0 +1,26 @@
+[
+  {
+    "doc_id": "DOC_01_ADMISSION",
+    "doc_type": "Admission_Note",
+    "doc_date": "2026-11-10",
+    "text": "64yo male admitted with chest tightness and dizziness. Past medical history: Atrial Fibrillation, Hypertension. Allergies: Penicillin (Severe Anaphylaxis). Home Meds: Warfarin 5mg once daily, Lisinopril 10mg daily."
+  },
+  {
+    "doc_id": "DOC_02_LABS",
+    "doc_type": "Lab_Report",
+    "doc_date": "2026-11-11",
+    "text": "Hemoglobin: 8.1 g/dL (LOW). INR: 4.8 (CRITICAL HIGH). Stool occult blood: POSITIVE."
+  },
+  {
+    "doc_id": "DOC_03_PROGRESS",
+    "doc_type": "Progress_Note",
+    "doc_date": "2026-11-12",
+    "text": "Patient developed upper GI bleed secondary to supratherapeutic INR. DISCONTINUED Warfarin immediately. Started IV pantoprazole. Also noted mild productive cough; suspect early bronchitis."
+  },
+  {
+    "doc_id": "DOC_04_DISCHARGE",
+    "doc_type": "Discharge_Summary",
+    "doc_date": "2026-11-14",
+    "text": "Patient stabilized and ready for discharge. Resume home medications: Warfarin 5mg once daily, Lisinopril 10mg daily. Added Amoxicillin 500mg TID for 5 days for bronchitis."
+  }
+]
