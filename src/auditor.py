@@ -1,32 +1,7 @@
-import os
-import re
-import time
 from collections import defaultdict
-import instructor
-from instructor.core import InstructorRetryException
-from openai import OpenAI, RateLimitError, BadRequestError
-from dotenv import load_dotenv
-
 from schemas import ClinicalEvent, AuditResult
+from llm_client import generate_structured_output
 
-load_dotenv()
-
-client = instructor.from_openai(
-    OpenAI(
-        base_url="https://api.groq.com/openai/v1",
-        api_key=os.getenv("GROQ_API_KEY"),
-    ),
-    mode=instructor.Mode.JSON,
-)
-
-FALLBACK_MODELS = [
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b",
-    "meta-llama/llama-4-maverick-17b-128e-instruct",
-    "meta-llama/llama-4-scout-17b-16e-instruct",
-]
-
-EXHAUSTED_MODELS: set[str] = set()
 
 def build_temporal_timeline(all_events: list[ClinicalEvent]) -> dict:
     """
@@ -58,27 +33,24 @@ def build_temporal_timeline(all_events: list[ClinicalEvent]) -> dict:
         "deterministic_flags": deterministic_flags,
     }
 
+
 AUDITOR_SYSTEM_PROMPT = """
 You are the MEDUSA-X Epistemic Clinical Auditor & Safety Gatekeeper.
 Your job is to verify reconstructed patient timelines and catch dangerous discrepancies BEFORE any clinical summary is trusted.
 
 Analyze the chronological clinical events and the deterministic timeline flags to detect:
-1. Outdated_Medication: Drugs copy-pasted or resumed after being discontinued/held without clinical justification, or medications contraindicated by new critical lab results (e.g., Metformin with severe renal failure / low eGFR, or ACE inhibitors/Lisinopril with severe hyperkalemia).
+1. Outdated_Medication: Drugs copy-pasted or resumed after being discontinued/held without clinical justification, or medications contraindicated by new critical lab results (e.g., Metformin with severe renal failure / low eGFR, or ACE inhibitors/Lisinopril with severe hyperkalemia) or pregnancy (e.g., Isotretinoin, Lisinopril).
 2. Allergy_Mismatch: Prescribed drugs that cross-react with documented patient allergies (e.g., Penicillin allergy vs. Amoxicillin, or Sulfa allergy vs. Bactrim/Sulfamethoxazole).
-3. Contradictory_Diagnosis: Conflicting diagnoses across notes.
+3. Contradictory_Diagnosis: Conflicting diagnoses across notes, or dangerous drug-drug / duplicate therapy interactions (e.g., Warfarin + NSAID/Ibuprofen, duplicate DOACs like Apixaban + Rivaroxaban, or severe QTc prolongation > 500ms + Levofloxacin/Amiodarone).
 4. Missing_Followup: Critical abnormal labs or acute organ injuries lacking follow-up verification at discharge.
 
 EPISTEMIC HUMILITY RULES:
 - Calculate a 'trust_score' between 0.0 and 1.0 (deduct heavily for every unresolved conflict or missing critical lab).
 - Set 'must_escalate' = True if there is ANY CRITICAL conflict, medication discrepancy, allergy risk, or if trust_score < 0.85.
 - Every conflict MUST cite exact quotes and Document IDs in 'evidence_a' and 'evidence_b'.
+- Output ONLY valid JSON matching the requested schema.
 """
 
-def _sleep_for_rate_limit(err: Exception, attempt: int):
-    msg = str(err)
-    match = re.search(r"try again in (\d+(?:\.\d+)?)s", msg)
-    wait_s = float(match.group(1)) + 1.0 if match else 3.0 * (attempt + 1)
-    time.sleep(min(wait_s, 15.0))
 
 def run_clinical_audit(all_events: list[ClinicalEvent]) -> AuditResult:
     timeline_data = build_temporal_timeline(all_events)
@@ -102,36 +74,23 @@ def run_clinical_audit(all_events: list[ClinicalEvent]) -> AuditResult:
     Perform a complete forensic audit, assign a trust_score, and decide whether the system MUST STOP and escalate to a human clinician.
     """
 
-    for model_name in FALLBACK_MODELS:
-        if model_name in EXHAUSTED_MODELS:
-            continue
-        for attempt in range(3):
-            try:
-                return client.chat.completions.create(
-                    model=model_name,
-                    response_model=AuditResult,
-                    messages=[
-                        {"role": "system", "content": AUDITOR_SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                    temperature=0.0,
-                    max_tokens=8192,
-                    max_retries=1,
-                )
-            except (RateLimitError, BadRequestError, InstructorRetryException) as e:
-                err_str = str(e).lower()
-                if "tokens per day" in err_str or "tpd" in err_str or "model_not_found" in err_str:
-                    EXHAUSTED_MODELS.add(model_name)
-                    break
-                if "json_validate_failed" in err_str or "400" in err_str:
-                    if attempt >= 1:
-                        break
-                    time.sleep(1.0)
-                    continue
-                if "429" not in err_str and "rate_limit" not in err_str:
-                    raise
-                if attempt == 2:
-                    break
-                _sleep_for_rate_limit(e, attempt)
+    audit = generate_structured_output(
+        response_model=AuditResult,
+        messages=[
+            {"role": "system", "content": AUDITOR_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        max_tokens=4096,
+        temperature=0.0,
+    )
 
-    raise RuntimeError("All Groq fallback models reached their rate limits or failed validation.")
+    # Enforce deterministic trust score math based on verified conflict severities
+    critical_count = sum(1 for c in audit.conflicts if c.severity == "CRITICAL")
+    warning_count = sum(1 for c in audit.conflicts if c.severity == "WARNING")
+    missing_count = len(audit.missing_information)
+
+    computed_score = 1.0 - (0.30 * critical_count) - (0.10 * warning_count) - (0.05 * missing_count)
+    audit.trust_score = round(max(0.05 if critical_count > 0 else 0.0, min(1.0, computed_score)), 2)
+    audit.must_escalate = (critical_count > 0) or (audit.trust_score < 0.85)
+
+    return audit

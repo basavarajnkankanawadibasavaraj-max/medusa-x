@@ -4,43 +4,109 @@
     "expected_mode": "ESCALATED",
     "actual_mode": "ESCALATED",
     "passed": true,
-    "trust_score": 0.45,
-    "conflicts": 5,
+    "trust_score": 0.1,
+    "conflicts": 3,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 44.95708530000411
+    "latency": 95.56939229999989
   },
   {
     "case_id": "BENCH_02_CLEAN_PNEUMONIA",
     "expected_mode": "VERIFIED_SUMMARY",
     "actual_mode": "VERIFIED_SUMMARY",
     "passed": true,
-    "trust_score": 1.0,
+    "trust_score": 0.95,
     "conflicts": 0,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 98.54516100000183
+    "latency": 140.44765760000155
   },
   {
     "case_id": "BENCH_03_TRAP_RENAL_HYPERKALEMIA",
     "expected_mode": "ESCALATED",
     "actual_mode": "ESCALATED",
     "passed": true,
-    "trust_score": 0.6,
+    "trust_score": 0.1,
     "conflicts": 2,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 72.2068300999963
+    "latency": 119.54992589999893
   },
   {
     "case_id": "BENCH_04_CLEAN_APPENDECTOMY",
     "expected_mode": "VERIFIED_SUMMARY",
     "actual_mode": "VERIFIED_SUMMARY",
     "passed": true,
-    "trust_score": 1.0,
+    "trust_score": 0.95,
     "conflicts": 0,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 50.40807279999717
+    "latency": 76.11175809999986
+  },
+  {
+    "case_id": "BENCH_05_TRAP_NSAID_WARFARIN",
+    "expected_mode": "ESCALATED",
+    "actual_mode": "ESCALATED",
+    "passed": true,
+    "trust_score": 0.2,
+    "conflicts": 1,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 82.74763669999811
+  },
+  {
+    "case_id": "BENCH_06_TRAP_PREGNANCY_TERATOGEN",
+    "expected_mode": "ESCALATED",
+    "actual_mode": "ESCALATED",
+    "passed": true,
+    "trust_score": 0.1,
+    "conflicts": 2,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 108.80169169999863
+  },
+  {
+    "case_id": "BENCH_07_TRAP_DUPLICATE_DOAC",
+    "expected_mode": "ESCALATED",
+    "actual_mode": "ESCALATED",
+    "passed": true,
+    "trust_score": 0.2,
+    "conflicts": 1,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 114.42865029999666
+  },
+  {
+    "case_id": "BENCH_08_TRAP_QT_PROLONGATION",
+    "expected_mode": "ESCALATED",
+    "actual_mode": "ESCALATED",
+    "passed": true,
+    "trust_score": 0.2,
+    "conflicts": 1,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 91.42165240000031
+  },
+  {
+    "case_id": "BENCH_09_CLEAN_CARDIAC_STENT_DAPT",
+    "expected_mode": "VERIFIED_SUMMARY",
+    "actual_mode": "VERIFIED_SUMMARY",
+    "passed": true,
+    "trust_score": 0.95,
+    "conflicts": 0,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 112.47132019999844
+  },
+  {
+    "case_id": "BENCH_10_CLEAN_DKA_RESOLVED",
+    "expected_mode": "VERIFIED_SUMMARY",
+    "actual_mode": "VERIFIED_SUMMARY",
+    "passed": true,
+    "trust_score": 0.95,
+    "conflicts": 0,
+    "kw_recall": 100.0,
+    "citation_acc": 100.0,
+    "latency": 147.90506109999842
   }
 ]
