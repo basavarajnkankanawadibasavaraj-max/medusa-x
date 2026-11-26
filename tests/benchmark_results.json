@@ -4,33 +4,33 @@
     "expected_mode": "ESCALATED",
     "actual_mode": "ESCALATED",
     "passed": true,
-    "trust_score": 0.3,
-    "conflicts": 3,
+    "trust_score": 0.4,
+    "conflicts": 2,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 6.647355000000971
+    "latency": 3.558748299998115
   },
   {
     "case_id": "BENCH_02_CLEAN_PNEUMONIA",
     "expected_mode": "VERIFIED_SUMMARY",
     "actual_mode": "VERIFIED_SUMMARY",
     "passed": true,
-    "trust_score": 1.0,
-    "conflicts": 0,
+    "trust_score": 0.9,
+    "conflicts": 1,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 43.00374820000434
+    "latency": 20.379018599996925
   },
   {
     "case_id": "BENCH_03_TRAP_RENAL_HYPERKALEMIA",
     "expected_mode": "ESCALATED",
     "actual_mode": "ESCALATED",
     "passed": true,
-    "trust_score": 0.35,
+    "trust_score": 0.4,
     "conflicts": 2,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 38.74100560000079
+    "latency": 3.3306068000092637
   },
   {
     "case_id": "BENCH_04_CLEAN_APPENDECTOMY",
@@ -41,7 +41,7 @@
     "conflicts": 0,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 26.6914242999992
+    "latency": 18.60350240000116
   },
   {
     "case_id": "BENCH_05_TRAP_NSAID_WARFARIN",
@@ -52,18 +52,18 @@
     "conflicts": 1,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 25.812828699999955
+    "latency": 34.942058800006635
   },
   {
     "case_id": "BENCH_06_TRAP_PREGNANCY_TERATOGEN",
     "expected_mode": "ESCALATED",
     "actual_mode": "ESCALATED",
     "passed": true,
-    "trust_score": 0.7,
-    "conflicts": 1,
-    "kw_recall": 66.66666666666666,
+    "trust_score": 0.4,
+    "conflicts": 2,
+    "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 24.75999810000212
+    "latency": 23.63066520000575
   },
   {
     "case_id": "BENCH_07_TRAP_DUPLICATE_DOAC",
@@ -74,7 +74,7 @@
     "conflicts": 2,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 15.240978800000448
+    "latency": 25.11843069999304
   },
   {
     "case_id": "BENCH_08_TRAP_QT_PROLONGATION",
@@ -85,7 +85,7 @@
     "conflicts": 1,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 25.489619799998763
+    "latency": 15.693996600006358
   },
   {
     "case_id": "BENCH_09_CLEAN_CARDIAC_STENT_DAPT",
@@ -96,7 +96,7 @@
     "conflicts": 0,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 49.0902786000006
+    "latency": 33.69427909998922
   },
   {
     "case_id": "BENCH_10_CLEAN_DKA_RESOLVED",
@@ -107,6 +107,6 @@
     "conflicts": 0,
     "kw_recall": 100.0,
     "citation_acc": 100.0,
-    "latency": 33.783848999999464
+    "latency": 46.68206039999495
   }
 ]
